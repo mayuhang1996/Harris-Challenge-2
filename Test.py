@@ -14,7 +14,7 @@ Python's abilities to do so.  We will use the following guidelines:
 
 
 The World class has been made for you, take a look and try to understand how it works
-Your task is to write a function for Agents 
+Your task is to write a function for Agents, 
 '''
 
 from numpy import random, mean
@@ -28,40 +28,74 @@ params = {'world_size':(20,20),
           'print_to_screen': True}  #toggle this T/F to print output
 
 class Agent():
-    #An agent needs to know if it is happy, needs to be able to move (find a vacancy and fill
-    # it), can either check if it'll be happy in the new location, or not and
-    # needs to report to World what it did
-        def __init__(self, world, kind, same_pref):
+    def __init__(self, world, kind, same_pref):
         self.world = world
         self.kind = kind
         self.same_pref = same_pref
         self.location = None
-    
-    def move(self): 
-        #moves an agent
-        #agent has to know if it is happy to decide if it'll move 
-        #agent has to be able to find vacancies (use self.world.find_vacant(...))
-        #return something that indicates if the agent moved
 
-        #the way it is currently writen:
-        #return 4 #red moved
-        #return 5 #blue moved
-        #return 2 # red unhappy but did not move
-        #return 3  # blue unhappy but did not move
-        #return 0 # red happy, did not move
-        #return 1 # blue happy, did not move
+    def move(self): #I added params
+        #handle each agent's turn in the model iteration
 
-        pass
+        happy = self.am_i_happy()
+
+        if not happy:
+        #enter this loop if the look_before_move parameter is set to True
+        #handles moves for not happy, checking if will be happy at the new location
+            vacancies = self.world.find_vacant(return_all=True)
+            for patch in vacancies:
+                i_moved = False
+                will_i_like_it = self.am_i_happy(loc=patch)
+                if will_i_like_it is True:
+                    self.world.grid[self.location] = None #move out of current patch
+                    self.location = patch                 #assign new patch to myself
+                    self.world.grid[patch] = self         #update the grid
+                    i_moved = True
+                    if self.kind == 'red':
+                        return 4 #red moved
+                    else:
+                        return 5 #blue moved
+
+        
+            if i_moved is False:
+                if self.kind == 'red':
+                    return 2 # red unhappy but did not move
+                else:
+                    return 3  # blue unhappy but did not move              
+        elif happy: 
+            if self.kind == 'red':
+                return 0 # red happy, did not move
+            else:
+                return 1 # blue happy, did not move
 
     def am_i_happy(self, loc=False, neighbor_check=False):
         #this should return a boolean for whether or not an agent is happy at a location
         #if loc is False, use current location, else use specified location
+
+        if not loc:
+            starting_loc = self.location
+        else:
+            starting_loc = loc
+
+        neighbor_patches = self.world.locate_neighbors(starting_loc)
+        neighbor_agents  = [self.world.grid[patch] for patch in neighbor_patches]
+        neighbor_kinds   = [agent.kind for agent in neighbor_agents if agent is not None]
+        num_like_me      = sum([kind == self.kind for kind in neighbor_kinds])
+
         #for reporting purposes, allow checking of the current number of similar neighbors
+        if neighbor_check:
+            return [kind == self.kind for kind in neighbor_kinds]
 
         #if an agent is in a patch with no neighbors at all, treat it as unhappy
-        #if len(neighbor_kinds) == 0:
-        #    return False
-        pass
+        if len(neighbor_kinds) == 0:
+            return False
+
+        perc_like_me = num_like_me / len(neighbor_kinds)
+
+        if perc_like_me < self.same_pref:
+            return False
+        else:
+            return True
     
     def start_happy_r_b(self):
     #for reporting purposes, allow count of happy before any moves, of red and blue seperately
@@ -293,25 +327,6 @@ class World():
 
 world = World(params)
 world.run()
-
-
-'''
-sample output
-Everyone is happy!  Stopping after iteration 5.
-
-All results begin at time=0 and go in order to the end.
-
-The average number of neighbors an agent has not like them: [3.67, 1.84, 1.44, 1.37, 1.33, 1.31, 1.31]
-The average number of neighbors a red agent has not like them: [3.06, 1.53, 1.2, 1.14, 1.11, 1.09, 1.09]
-The average number of neighbors a blue agent has not like them: [4.59, 2.3, 1.8, 1.71, 1.66, 1.64, 1.64]
-The number of happy agents: [297, 291, 361, 377, 378, 379, 380]
-The number of happy red agents: [228, 184, 217, 227, 228, 228, 228]
-The number of happy blue agents: [152, 107, 144, 150, 150, 151, 152]
-The number of red agent moves per turn: [0, 44, 11, 1, 0, 0, 0]
-The number of blue agent moves per turn: [0, 45, 8, 2, 2, 1, 0]
-The number of red agents who failed to find a new home: [0, 0, 0, 0, 0, 0, 0]
-The number of blue agents who failed to find a new home: [0, 0, 0, 0, 0, 0, 0]
-'''
 
 
 
