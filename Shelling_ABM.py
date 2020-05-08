@@ -16,7 +16,7 @@ Python's abilities to do so.  We will use the following guidelines:
 The World class has been made for you, take a look and try to understand how it works
 Your task is to write a function for Agents 
 '''
-
+# I do not think my code work, and I am asking for comment, thanks!
 from numpy import random, mean
 
 params = {'world_size':(20,20),
